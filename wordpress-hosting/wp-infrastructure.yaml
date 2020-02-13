@@ -4,7 +4,7 @@ Resources:
     Properties:
       AllocatedStorage: 5
       StorageType: gp2
-      DBInstanceClass: db.t2.micro
+      DBInstanceClass: !FindInMap [ InstanceSize, !Ref EnvironmentSize, DB ]
       DBName: wordpress
       Engine: MySQL
       MasterUsername: wordpress
@@ -12,9 +12,64 @@ Resources:
   EC2:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-062f7200baf2fa504 # Amazon Linux 2 AMI Id in us-east-1 (N. Virginia)
-      InstanceType: t2.micro
+      ImageId: !FindInMap [ RegionMap, !Ref "AWS::Region", AmazonLinux2 ]
+      InstanceType: !FindInMap [ InstanceSize, !Ref EnvironmentSize, EC2 ]
   S3:
     Type: AWS::S3::Bucket
-    Properties:
-      BucketName: wp-009009
+
+Parameters:
+  EnvironmentSize:
+    Type: String
+    Default: SMALL
+    AllowedValues:
+      - SMALL
+      - MEDIUM
+      - LARGE
+    Description: Select environment size (S,M,L)
+
+Mappings:
+  InstanceSize:
+    SMALL:
+      EC2: t2.micro
+      DB: db.t2.micro
+    MEDIUM:
+      EC2: t2.small
+      DB: db.t2.small
+    LARGE:
+      EC2: t2.medium
+      DB: db.t2.medium
+  RegionMap:
+    us-east-1:
+      AmazonLinux2: ami-062f7200baf2fa504
+    us-east-2:
+      AmazonLinux2: ami-02ccb28830b645a41
+    us-west-1:
+      AmazonLinux2: ami-03caa3f860895f82e
+    us-west-2:
+      AmazonLinux2: ami-04590e7389a6e577c
+    ap-east-1:
+      AmazonLinux2: ami-db3d78aa
+    ap-south-1:
+      AmazonLinux2: ami-0217a85e28e625474
+    ap-northeast-2:
+      AmazonLinux2: ami-0bea7fd38fabe821a
+    ap-southeast-1:
+      AmazonLinux2: ami-05c64f7b4062b0a21
+    ap-southeast-2:
+      AmazonLinux2: ami-0b8b10b5bf11f3a22
+    ap-northeast-1:
+      AmazonLinux2: ami-011facbea5ec0363b
+    ca-central-1:
+      AmazonLinux2: ami-0a269ca7cc3e3beff
+    eu-central-1:
+      AmazonLinux2: ami-07cda0db070313c52
+    eu-west-1:
+      AmazonLinux2: ami-0713f98de93617bb4
+    eu-west-2:
+      AmazonLinux2: ami-0089b31e09ac3fffc
+    eu-west-3:
+      AmazonLinux2: ami-007fae589fdf6e955
+    eu-north-1:
+      AmazonLinux2: ami-0662eb9b9b8685935
+    sa-east-1:
+      AmazonLinux2: ami-09de7b4017733e2af
