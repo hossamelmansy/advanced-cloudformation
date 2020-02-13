@@ -1,0 +1,20 @@
+Resources:
+  DB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 5
+      StorageType: gp2
+      DBInstanceClass: db.t2.micro
+      DBName: wordpress
+      Engine: MySQL
+      MasterUsername: wordpress
+      MasterUserPassword: w0rdpr355
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-062f7200baf2fa504 # Amazon Linux 2 AMI Id in us-east-1 (N. Virginia)
+      InstanceType: t2.micro
+  S3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: wp-009009
