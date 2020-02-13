@@ -1,4 +1,4 @@
-# advanced-cloudformation
+# Advanced CloudFormation
 
 Advanced CloudFormation course projects
 
