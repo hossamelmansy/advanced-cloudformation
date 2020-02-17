@@ -5,15 +5,33 @@ Resources:
       AllocatedStorage: 5
       StorageType: gp2
       DBInstanceClass: !FindInMap [ InstanceSize, !Ref EnvironmentSize, DB ]
-      DBName: wordpress
+      DBName: !Ref DatabaseName
       Engine: MySQL
-      MasterUsername: wordpress
-      MasterUserPassword: w0rdpr355
+      MasterUsername: !Ref DatabaseUser
+      MasterUserPassword: !Ref DatabasePassword
   EC2:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !FindInMap [ RegionMap, !Ref "AWS::Region", AmazonLinux2 ]
       InstanceType: !FindInMap [ InstanceSize, !Ref EnvironmentSize, EC2 ]
+      KeyName: AdvancedCFN
+      UserData: 
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum install httpd php mysql php-mysql -y
+            yum update -y
+            chkconfig httpd on
+            service httpd start
+            cd /var/www/html
+            wget https://wordpress.org/latest.tar.gz
+            tar -zxvf latest.tar.gz --strip 1
+            rm latest.tar.gz
+            cp wp-config.sample.php wp-config.php
+            sed -i 's/database_name_here/${DatabaseName}/g' wp-config.php
+            sed -i 's/localhost/${DB.Endpoint.Address}/g' wp-config.php
+            sed -i 's/username_here/${DatabaseUser}/g' wp-config.php
+            sed -i 's/password_here/${DatabasePassword}/g' wp-config.php
   S3:
     Type: AWS::S3::Bucket
 
@@ -26,6 +44,16 @@ Parameters:
       - MEDIUM
       - LARGE
     Description: Select environment size (S,M,L)
+  DatabaseName:
+    Type: String
+    Default: wordpress
+  DatabaseUser:
+    Type: String
+    Default: wordpress
+  DatabasePassword:
+    Type: String
+    Default: w0rdpr355
+    NoEcho: true
 
 Mappings:
   InstanceSize:
