@@ -20,6 +20,7 @@ Resources:
           !Sub |
             #!/bin/bash
             yum install httpd php mysql php-mysql -y
+            amazon-linux-extras install -y php7.3
             yum update -y
             chkconfig httpd on
             service httpd start
@@ -27,7 +28,7 @@ Resources:
             wget https://wordpress.org/latest.tar.gz
             tar -zxvf latest.tar.gz --strip 1
             rm latest.tar.gz
-            cp wp-config.sample.php wp-config.php
+            cp wp-config-sample.php wp-config.php
             sed -i 's/database_name_here/${DatabaseName}/g' wp-config.php
             sed -i 's/localhost/${DB.Endpoint.Address}/g' wp-config.php
             sed -i 's/username_here/${DatabaseUser}/g' wp-config.php
