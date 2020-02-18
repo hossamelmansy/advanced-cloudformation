@@ -19,20 +19,84 @@ Resources:
         Fn::Base64:
           !Sub |
             #!/bin/bash
-            yum install httpd php mysql php-mysql -y
-            amazon-linux-extras install -y php7.3
-            yum update -y
-            chkconfig httpd on
-            service httpd start
-            cd /var/www/html
-            wget https://wordpress.org/latest.tar.gz
-            tar -zxvf latest.tar.gz --strip 1
-            rm latest.tar.gz
-            cp wp-config-sample.php wp-config.php
-            sed -i 's/database_name_here/${DatabaseName}/g' wp-config.php
-            sed -i 's/localhost/${DB.Endpoint.Address}/g' wp-config.php
-            sed -i 's/username_here/${DatabaseUser}/g' wp-config.php
-            sed -i 's/password_here/${DatabasePassword}/g' wp-config.php
+            yum update -y aws-cfn-bootstrap # good practice - always do this
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2 --configsets wordpress --region ${AWS::Region}
+            yum -y update
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          wordpress:
+            - "configureCFN"
+            - "installWordpress"
+            - "configureWordpress"
+        configureCFN:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackName}
+                region=${AWS::Region}
+                verbose=true
+                interval=5
+              mode: "000400"
+              owner: "root"
+              group: "root"
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.EC2.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource=EC2 --configsets wordpress --region ${AWS::Region}
+              mode: "000400"
+              owner: "root"
+              group: "root"
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: "true"
+                ensureRunning: "true"
+                files:
+                  - "/etc/cfn/cfn-hup.conf"
+                  - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+        installWordpress:
+          packages:
+            yum:
+              httpd: []
+              php: []
+              mariadb: []
+              php-mysql: []
+          sources:
+            /var/www/html: "https://wordpress.org/latest.tar.gz"
+          commands:
+            01-installPHP73:
+              command: "amazon-linux-extras install -y php7.3"
+          services:
+            sysvinit:
+              httpd:
+                enabled: "true"
+                ensureRunning: "true"
+        configureWordpress:
+          commands:
+            01-cloneConfiguration:
+              cwd: "/var/www/html/wordpress"
+              test: "test ! -e /var/www/html/wordpress/wp-config.php"
+              command: "cp wp-config-sample.php wp-config.php"
+            02-injectDBHost:
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                sed -i 's/localhost/${DB.Endpoint.Address}/g' wp-config.php
+            03-injectDBName:
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                sed -i 's/database_name_here/${DatabaseName}/g' wp-config.php
+            04-injectDBUser:
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                sed -i 's/username_here/${DatabaseUser}/g' wp-config.php
+            05-injectDBPassword:
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                sed -i 's/password_here/${DatabasePassword}/g' wp-config.php
   S3:
     Type: AWS::S3::Bucket
 
