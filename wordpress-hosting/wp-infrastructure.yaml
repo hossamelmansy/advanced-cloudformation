@@ -4,17 +4,18 @@ Resources:
     Properties:
       AllocatedStorage: 5
       StorageType: gp2
-      DBInstanceClass: !FindInMap [ InstanceSize, !Ref EnvironmentSize, DB ]
-      DBName: !Ref DatabaseName
+      DBInstanceClass: !FindInMap [InstanceSize, !Ref EnvironmentSize, DB]
+      DBName: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabaseName]
       Engine: MySQL
-      MasterUsername: !Ref DatabaseUser
-      MasterUserPassword: !Ref DatabasePassword
+      MasterUsername: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabaseUser]
+      MasterUserPassword: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabasePassword]
+      DBSnapshotIdentifier: !If [isRestore, !Ref SnapshotToRestore, !Ref "AWS::NoValue"]
     DeletionPolicy: Delete
   EC2:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !FindInMap [ RegionMap, !Ref "AWS::Region", AmazonLinux2 ]
-      InstanceType: !FindInMap [ InstanceSize, !Ref EnvironmentSize, EC2 ]
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AmazonLinux2]
+      InstanceType: !FindInMap [InstanceSize, !Ref EnvironmentSize, EC2]
       KeyName: AdvancedCFN
       UserData: 
         Fn::Base64:
@@ -127,6 +128,18 @@ Parameters:
     Type: String
     Default: w0rdpr355
     NoEcho: true
+  SnapshotToRestore:
+    Type: String
+    Default: ""
+    Description: "Snapshot Id to restore from"
+
+Conditions:
+  isLarge:
+    !Equals [!Ref EnvironmentSize, "LARGE"]
+  isntLarge:
+    !Not [!Equals [!Ref EnvironmentSize, "LARGE"]]
+  isRestore:
+    !Not [!Equals [!Ref SnapshotToRestore, ""]]
 
 Mappings:
   InstanceSize:
