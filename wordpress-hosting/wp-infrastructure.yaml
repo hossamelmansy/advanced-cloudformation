@@ -127,6 +127,25 @@ Resources:
               cwd: "/var/www/html/wordpress"
               command: !Sub |
                 sed -i 's/password_here/${DatabasePassword}/g' wp-config.php
+            06-storeInstanceIP:
+              cwd: "/var/www/html/wordpress"
+              command: "curl http://169.254.169.254/latest/meta-data/public-ipv4 > ip.address"
+            07a-injectIP1: # this allows a restore & change of IP without causing WP errors.
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                myip=`cat ip.address` && echo "define('WP_SITEURL', 'http://${!myip}/wordpress');" >> wp-config.php
+            07b-injectIP2: # this allows a restore & change of IP without causing WP errors.
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                myip=`cat ip.address` && echo "define('WP_HOME', 'http://${!myip}/wordpress');" >> wp-config.php
+            08a-updateTheme1:
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                myip=`cat ip.address` && echo "update_option('siteurl','http://${!myip}/wordpress');" >> /var/www/html/wordpress/wp-content/themes/twentyseventeen/functions.php
+            08a-updateTheme2:
+              cwd: "/var/www/html/wordpress"
+              command: !Sub |
+                myip=`cat ip.address` && echo "update_option('home','http://${!myip}/wordpress');" >> /var/www/html/wordpress/wp-content/themes/twentyseventeen/functions.php
   S3:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
