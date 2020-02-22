@@ -9,6 +9,7 @@ Resources:
       Engine: MySQL
       MasterUsername: !Ref DatabaseUser
       MasterUserPassword: !Ref DatabasePassword
+    DeletionPolicy: Delete
   EC2:
     Type: AWS::EC2::Instance
     Properties:
@@ -27,6 +28,7 @@ Resources:
       ResourceSignal:
         Count: "1"
         Timeout: PT15M
+    DeletionPolicy: Delete
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
@@ -104,6 +106,7 @@ Resources:
                 sed -i 's/password_here/${DatabasePassword}/g' wp-config.php
   S3:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
 
 Parameters:
   EnvironmentSize:
