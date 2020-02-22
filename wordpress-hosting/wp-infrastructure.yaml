@@ -1,6 +1,7 @@
 Resources:
   DB:
     Type: AWS::RDS::DBInstance
+    Condition: isntLarge # only create if EnvironmentSize is SMALL or MEDIUM
     Properties:
       AllocatedStorage: 5
       StorageType: gp2
@@ -11,6 +12,23 @@ Resources:
       MasterUserPassword: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabasePassword]
       DBSnapshotIdentifier: !If [isRestore, !Ref SnapshotToRestore, !Ref "AWS::NoValue"]
     DeletionPolicy: Delete
+  DBAuroraCluster:
+    Type: AWS::RDS::DBCluster
+    Condition: isLarge # only create if EnvironmentSize is LARGE
+    Properties:
+      DatabaseName: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabaseName]
+      Engine: aurora
+      MasterUsername: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabaseUser]
+      MasterUserPassword: !If [isRestore, !Ref "AWS::NoValue", !Ref DatabasePassword]
+      SnapshotIdentifier: !If [isRestore, !Ref SnapshotToRestore, !Ref "AWS::NoValue"]
+    DeletionPolicy: Snapshot
+  DBAurora:
+    Type: AWS::RDS::DBInstance
+    Condition: isLarge # only create if EnvironmentSize is LARGE
+    Properties:
+      DBClusterIdentifier: !Ref DBAuroraCluster
+      Engine: aurora
+      DBInstanceClass: !FindInMap [InstanceSize, !Ref EnvironmentSize, DB]
   EC2:
     Type: AWS::EC2::Instance
     Properties:
@@ -91,8 +109,12 @@ Resources:
               command: "cp wp-config-sample.php wp-config.php"
             02-injectDBHost:
               cwd: "/var/www/html/wordpress"
-              command: !Sub |
-                sed -i 's/localhost/${DB.Endpoint.Address}/g' wp-config.php
+              command: !If
+                - isntLarge
+                - !Sub |
+                  sed -i 's/localhost/${DB.Endpoint.Address}/g' wp-config.php
+                - !Sub |
+                  sed -i 's/localhost/${DBAuroraCluster.Endpoint.Address}/g' wp-config.php
             03-injectDBName:
               cwd: "/var/www/html/wordpress"
               command: !Sub |
