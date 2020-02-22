@@ -162,12 +162,21 @@ Parameters:
   DatabaseName:
     Type: String
     Default: wordpress
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
   DatabaseUser:
     Type: String
     Default: wordpress
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
   DatabasePassword:
     Type: String
     Default: w0rdpr355
+    MinLength: 8
+    MaxLength: 41
+    AllowedPattern: "[a-zA-Z0-9]*"
     NoEcho: true
   SnapshotToRestore:
     Type: String
