@@ -5,47 +5,47 @@ Resources:
       AvailabilityZone: !Select [0, !GetAZs ]
       CidrBlock: !Ref APPPublicCIDRA
       MapPublicIpOnLaunch: true
-      VpcId: !Ref VPCID
+      VpcId: !ImportValue sharedinf-vpcid
   SubnetPrivateA: # Private Subnet for App Env in AZ - A
     Type: "AWS::EC2::Subnet"
     Properties:
       AvailabilityZone: !Select [0, !GetAZs ]
       CidrBlock: !Ref APPPrivateCIDRA
       MapPublicIpOnLaunch: false
-      VpcId: !Ref VPCID
+      VpcId: !ImportValue sharedinf-vpcid
   SubnetPublicB: # Public Subnet for App Env in AZ - B  (not used yet)
     Type: "AWS::EC2::Subnet"
     Properties:
       AvailabilityZone: !Select [1, !GetAZs ]
       CidrBlock: !Ref APPPublicCIDRB
       MapPublicIpOnLaunch: true
-      VpcId: !Ref VPCID
+      VpcId: !ImportValue sharedinf-vpcid
   SubnetPrivateB: # Private Subnet for App Env in AZ - B (not used yet)
     Type: "AWS::EC2::Subnet"
     Properties:
       AvailabilityZone: !Select [1, !GetAZs ]
       CidrBlock: !Ref APPPrivateCIDRB
       MapPublicIpOnLaunch: false
-      VpcId: !Ref VPCID
+      VpcId: !ImportValue sharedinf-vpcid
   SubnetRouteTableAssociatePublicA: # Associates the subnet with a route table - passed via parameter
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
-      RouteTableId: !Ref PUBLICRT
+      RouteTableId: !ImportValue sharedinf-publicrt
       SubnetId: !Ref SubnetPublicA
   SubnetRouteTableAssociatePublicB: # Associates the subnet with a route table - passed via parameter
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
-      RouteTableId: !Ref PUBLICRT
+      RouteTableId: !ImportValue sharedinf-publicrt
       SubnetId: !Ref SubnetPublicB # Associates the subnet with a route table - passed via parameter
   SubnetRouteTableAssociatePrivateA: # Associates the subnet with a route table - passed via parameter
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
-      RouteTableId: !Ref PRIVATERTA
+      RouteTableId: !ImportValue sharedinf-privaterta
       SubnetId: !Ref SubnetPrivateA # Associates the subnet with a route table - passed via parameter
   SubnetRouteTableAssociatePrivateB: # Associates the subnet with a route table - passed via parameter
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
-      RouteTableId: !Ref PRIVATERTB
+      RouteTableId: !ImportValue sharedinf-privatertb
       SubnetId: !Ref SubnetPrivateB # Associates the subnet with a route table - passed via parameter
   ELB: # The loadbalancer in public subnet A, B
     Type: "AWS::ElasticLoadBalancing::LoadBalancer"
@@ -68,7 +68,7 @@ Resources:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       GroupDescription: !Join ["", ["Stack ", !Ref "AWS::StackId", " Application V", !Ref APPVERSION, " - ", !Ref ENVIRONMENT]]
-      VpcId: !Ref VPCID
+      VpcId: !ImportValue sharedinf-vpcid
       SecurityGroupIngress:
         -
           CidrIp: 0.0.0.0/0
@@ -92,7 +92,7 @@ Resources:
       ResourceSignal:
         Timeout: PT5M
     Properties:
-      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMALINUX] # Dynamic mapping + Pseudo Parameter
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AmazonLinux2] # Dynamic mapping + Pseudo Parameter
       InstanceType: !FindInMap [InstanceSize, !Ref ENVIRONMENT, EC2]
       KeyName: AdvancedCFN
       SecurityGroupIds:
@@ -155,10 +155,10 @@ Resources:
                 ensureRunning: "true"
         config_app:
           sources:
-            /var/www/html: !Join ["",[!Ref APPBucketURL, "/App", !Ref APPVERSION, ".zip"]]
+            /var/www/html: !Join ["",[!ImportValue sharedinf-appbucketurl, "/App", !Ref APPVERSION, ".zip"]]
           files:
             /var/www/html/test.pattern.zip:
-              source: !Join ["",[!Ref APPBucketURL, "/Test", !Ref APPVERSION, ".zip"]]
+              source: !Join ["",[!ImportValue sharedinf-appbucketurl, "/Test", !Ref APPVERSION, ".zip"]]
               mode: "000644"
               owner: "root"
               group: "root"
@@ -168,24 +168,9 @@ Resources:
               command: "unzip -o test.pattern.zip"
 
 Parameters:
-  VPCID: # Shared infrastructure VPC ID
-    Type: AWS::EC2::VPC::Id
-    Description: Shared Infrastructure VPC to use
-  PUBLICRT: # Shared infrastructure Public Route Table ID
-    Type: String
-    Description: Shared Infrastructure Public Route Table
-  PRIVATERTA: # Shared infrastructure Subnet A Private Route Table
-    Type: String
-    Description: Shared Infrastructure Private Route Table - A
-  PRIVATERTB: # Shared infrastructure Subnet B Private Route Table
-    Type: String
-    Description: Shared Infrastructure Private Route Table - B
   APPVERSION: # Application version to use
     Type: String
     Description: Application Version to Deploy
-  APPBucketURL: # Application bucket URL
-    Type: String
-    Description: Application Bucket Location
   ENVIRONMENT: # Type of environment
     Type: String
     Description: Type of environment to provision
@@ -229,15 +214,6 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "Shared Infrastructure Details"
-        Parameters:
-          - VPCID
-          - PUBLICRT
-          - PRIVATERTA
-          - PRIVATERTB
-          - APPBucketURL
-      -
-        Label:
           default: "App Environment Networking"
         Parameters:
           - APPPublicCIDRA
@@ -251,18 +227,8 @@ Metadata:
           - ENVIRONMENT
           - APPVERSION
     ParameterLabels:
-      VPCID:
-        default: "VPC Id"
-      PUBLICRT:
-        default: "Public Route Table"
-      PRIVATERTA:
-        default: "Subnet A - Private Route Table"
-      PRIVATERTB:
-        default: "Subnet B - Private Route Table"
       APPVERSION:
         default: "Application Version"
-      APPBucketURL:
-        default: "Application Bucket URL"
       ENVIRONMENT:
         default: "Environment Type"
       APPPublicCIDRA:

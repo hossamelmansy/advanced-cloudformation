@@ -138,6 +138,8 @@ Outputs:
   vpcid:
     Description: ID of Shared Infrastructure VPC
     Value: !Ref VPC
+    Export:
+      Name: sharedinf-vpcid
   natgatewayaid:
     Description: ID of NAT Gateway A
     Value: !Ref NatGatewayA
@@ -147,12 +149,20 @@ Outputs:
   publicroutetable:
     Description: ID of Public Route Table
     Value: !Ref RouteTablePublic
+    Export:
+      Name: sharedinf-publicrt
   privateroutetablea:
     Description: ID of Private Route Table - A
     Value: !Ref RouteTablePrivateA
+    Export:
+      Name: sharedinf-privaterta
   privateroutetableb:
     Description: ID of Private Route Table - B
     Value: !Ref RouteTablePrivateB
+    Export:
+      Name: sharedinf-privatertb
   appbucketurl:
     Description: Shared Infrastructure App Bucket
     Value: !GetAtt S3AppBucket.WebsiteURL
+    Export:
+      Name: sharedinf-appbucketurl
