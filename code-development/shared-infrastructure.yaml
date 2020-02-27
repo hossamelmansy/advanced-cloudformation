@@ -15,6 +15,14 @@ Resources:
       WebsiteConfiguration:
         ErrorDocument: index.html
         IndexDocument: index.html
+  S3LambdaBucket: # S3 bucket to hold Lambda code
+    DeletionPolicy: Retain
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        ErrorDocument: index.html
+        IndexDocument: index.html
   BucketPolicyApp: # A bucket policy for S3AppBucket to allow public read
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -27,6 +35,21 @@ Resources:
               - "s3:GetObject"
             Effect: Allow
             Resource: !Join ["", ["arn:aws:s3:::", !Ref S3AppBucket, "/*"]]
+            Principal:
+              AWS:
+                - "*"
+  BucketPolicyLambda: # A bucket policy for S3LambdaBucket to allow public read
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref S3LambdaBucket
+      PolicyDocument:
+        Statement:
+          -
+            Sid: "ABC123"
+            Action:
+              - "s3:GetObject"
+            Effect: Allow
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref S3LambdaBucket, "/*"]]
             Principal:
               AWS:
                 - "*"
@@ -135,6 +158,21 @@ Parameters:
     Default: 10.20.4.0/22
 
 Outputs:
+  vpciprange:
+    Description: IP Range of Shared Infrastructure VPC
+    Value: !Ref vpccidr
+    Export: # added to export
+      Name: sharedinf-vpciprange
+  vpcreservedrange1:
+    Description: IP Range of Shared Public SubnetA
+    Value: !Ref psharedacidr
+    Export: # added to export
+      Name: sharedinf-vpcreservedrange1
+  vpcreservedrange2:
+    Description: IP Range of Shared Public SubnetB
+    Value: !Ref psharedbcidr
+    Export: # added to export
+      Name: sharedinf-vpcreservedrange2
   vpcid:
     Description: ID of Shared Infrastructure VPC
     Value: !Ref VPC
@@ -166,3 +204,8 @@ Outputs:
     Value: !GetAtt S3AppBucket.WebsiteURL
     Export:
       Name: sharedinf-appbucketurl
+  lambdabucket:
+    Description: Shared Infrastructure Lambda Bucket
+    Value: !Ref S3LambdaBucket
+    Export:
+      Name: sharedinf-lambdabucketname
